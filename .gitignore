@@ -1,0 +1,30 @@
+# dependencies
+/node_modules
+
+# next.js
+/.next
+/out
+
+# production
+/build
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
+
+# ==== ЛИЧНЫЕ ДАННЫЕ — НЕ КОММИТИТЬ ====
+# База данных и любые бэкапы/дампы держим только локально.
+data.db
+data.db-journal
+data.db-wal
+data.db-shm
+*.db
+*.sqlite
+*.sqlite3
+/backups
+*.backup.json
+
+# misc
+.DS_Store
+*.log
+.env*.local
