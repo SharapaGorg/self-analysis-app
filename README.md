@@ -23,6 +23,17 @@
 Next.js (App Router, TypeScript) · SQLite через `better-sqlite3` · Recharts ·
 Vitest.
 
+## Скриншоты
+
+### Дашборд
+![Дашборд](docs/screenshots/dashboard.png)
+
+### Календарь
+![Календарь](docs/screenshots/calendar.png)
+
+### Ревью
+![Ревью](docs/screenshots/reviews.png)
+
 ## Запуск
 
 ```bash
