@@ -37,6 +37,12 @@ export interface DashboardStats {
     allTime: number;
   };
   streak: number; // consecutive days (ending today) meeting the daily goal
+  avgPerDay: {
+    // average pomodoros per calendar day over each window
+    week: number; // last 7 days
+    month: number; // last 30 days
+    allTime: number; // total / days from first tracked date to today
+  };
   series: Array<{ date: string; pomodoros: number; quality: number | null }>;
   weeklyQuality: Array<{ weekStart: string; quality: number | null }>;
   averages: {

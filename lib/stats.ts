@@ -84,6 +84,19 @@ export function computeStats(input: StatsInput): DashboardStats {
     cursor = addDays(cursor, -1);
   }
 
+  // --- average pomodoros per calendar day (zero days count) ---
+  const weekAvg = sumRange(addDays(today, -6), today) / 7;
+  const monthAvg = sumRange(addDays(today, -29), today) / 30;
+  let allTimeAvg = 0;
+  if (days.length > 0) {
+    const firstDate = days.reduce((min, d) => (d.date < min ? d.date : min), days[0].date);
+    // Guard against records dated in the future relative to `today`.
+    const spanEnd = firstDate > today ? firstDate : today;
+    const spanDays = daysInRange(firstDate, spanEnd).length;
+    allTimeAvg = spanDays > 0 ? totals.allTime / spanDays : 0;
+  }
+  const avgPerDay = { week: weekAvg, month: monthAvg, allTime: allTimeAvg };
+
   // --- averages (from reviews of the current period) ---
   const averages = {
     weekQuality: weeklyMap.get(weekStart)?.quality ?? null,
@@ -116,6 +129,7 @@ export function computeStats(input: StatsInput): DashboardStats {
     dailyGoal,
     totals,
     streak,
+    avgPerDay,
     series,
     weeklyQuality,
     averages,

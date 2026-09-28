@@ -92,6 +92,18 @@ export default function DashboardPage() {
         <Tile label="Стрик" value={stats.streak} suffix="🔥" hint={`≥ ${stats.dailyGoal}/день`} />
       </div>
 
+      {/* Average pomodoros per day */}
+      <Card title="Среднее помодоров в день">
+        <div className="grid grid-cols-3 gap-4">
+          <AvgCell label="Последняя неделя" value={stats.avgPerDay.week} />
+          <AvgCell label="Последний месяц" value={stats.avgPerDay.month} />
+          <AvgCell label="За всё время" value={stats.avgPerDay.allTime} />
+        </div>
+        <p className="mt-3 text-[11px] text-slate-600">
+          Среднее по календарным дням — дни без помодоров считаются как 0.
+        </p>
+      </Card>
+
       {/* Pomodoro bar chart with goal line */}
       <Card title={`Помодоры по дням (${range} дн)`}>
         <ResponsiveContainer width="100%" height={280}>
@@ -161,6 +173,17 @@ function Tile({ label, value, suffix, hint }: { label: string; value: number; su
         {value} {suffix && <span className="text-base">{suffix}</span>}
       </div>
       {hint && <div className="mt-0.5 text-[11px] text-slate-600">{hint}</div>}
+    </div>
+  );
+}
+
+function AvgCell({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="text-center">
+      <div className="text-2xl font-bold text-slate-100">
+        {value.toFixed(1)} <span className="text-sm">🍅</span>
+      </div>
+      <div className="mt-0.5 text-xs text-slate-500">{label}</div>
     </div>
   );
 }

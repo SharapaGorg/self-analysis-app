@@ -62,6 +62,30 @@ describe("computeStats streak", () => {
   });
 });
 
+describe("computeStats avgPerDay", () => {
+  it("averages over calendar days including zero days", () => {
+    // today = Sun 2026-09-27; last 7 days = 2026-09-21 .. 2026-09-27
+    const days = [
+      day("2026-09-21", 14),
+      day("2026-09-27", 7),
+    ];
+    const s = computeStats({ ...base, days, weekly: [], monthly: [] });
+    expect(s.avgPerDay.week).toBeCloseTo(21 / 7); // 3
+    expect(s.avgPerDay.month).toBeCloseTo(21 / 30);
+  });
+  it("all-time divides by span from first tracked date to today", () => {
+    // first tracked 2026-09-25, today 2026-09-27 => span 3 days
+    const days = [day("2026-09-25", 6), day("2026-09-27", 6)];
+    const s = computeStats({ ...base, days, weekly: [], monthly: [] });
+    expect(s.avgPerDay.allTime).toBeCloseTo(12 / 3); // 4
+  });
+  it("is zero when there are no records", () => {
+    const s = computeStats({ ...base, days: [], weekly: [], monthly: [] });
+    expect(s.avgPerDay.week).toBe(0);
+    expect(s.avgPerDay.allTime).toBe(0);
+  });
+});
+
 describe("computeStats deltas", () => {
   it("computes week-over-week pomodoro pct", () => {
     const days = [
