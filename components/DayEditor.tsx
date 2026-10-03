@@ -17,18 +17,28 @@ export default function DayEditor({
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [savedAt, setSavedAt] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
     setSavedAt(null);
+    setError(null);
     fetch(`/api/days/${date}`)
-      .then((r) => r.json())
+      .then((r) => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        return r.json();
+      })
       .then((d: DayRecord) => {
         if (cancelled) return;
         setPomodoros(d.pomodoros ?? 0);
         setQuality(d.quality ?? null);
         setReview(d.review ?? "");
+        setLoading(false);
+      })
+      .catch((e) => {
+        if (cancelled) return;
+        setError(`Не удалось загрузить день: ${e.message}`);
         setLoading(false);
       });
     return () => {
@@ -38,23 +48,45 @@ export default function DayEditor({
 
   async function save() {
     setSaving(true);
-    const res = await fetch(`/api/days/${date}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        pomodoros,
-        quality,
-        review: review.trim() === "" ? null : review,
-      }),
-    });
-    const rec = (await res.json()) as DayRecord;
-    setSaving(false);
-    setSavedAt(new Date().toLocaleTimeString("ru-RU"));
-    onSaved?.(rec);
+    setError(null);
+    try {
+      const res = await fetch(`/api/days/${date}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          pomodoros,
+          quality,
+          review: review.trim() === "" ? null : review,
+        }),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const rec = (await res.json()) as DayRecord;
+      setSavedAt(new Date().toLocaleTimeString("ru-RU"));
+      onSaved?.(rec);
+    } catch (e) {
+      setError(`Не удалось сохранить: ${(e as Error).message}`);
+    } finally {
+      setSaving(false);
+    }
   }
 
   if (loading) {
     return <div className="text-sm text-slate-500">Загрузка…</div>;
+  }
+
+  if (error && review === "" && quality === null) {
+    return (
+      <div className="text-sm text-rose-400">
+        {error}
+        <button
+          type="button"
+          onClick={() => window.location.reload()}
+          className="ml-2 underline hover:text-rose-300"
+        >
+          Обновить
+        </button>
+      </div>
+    );
   }
 
   return (
@@ -117,7 +149,10 @@ export default function DayEditor({
         >
           {saving ? "Сохранение…" : "Сохранить"}
         </button>
-        {savedAt && <span className="text-xs text-emerald-400">Сохранено в {savedAt}</span>}
+        {savedAt && !error && (
+          <span className="text-xs text-emerald-400">Сохранено в {savedAt}</span>
+        )}
+        {error && <span className="text-xs text-rose-400">{error}</span>}
       </div>
     </div>
   );

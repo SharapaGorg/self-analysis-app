@@ -30,18 +30,28 @@ export default function ReviewForm({
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [savedAt, setSavedAt] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
     setSavedAt(null);
+    setError(null);
     fetch(endpoint)
-      .then((r) => r.json())
+      .then((r) => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        return r.json();
+      })
       .then((d: ReviewData) => {
         if (cancelled) return;
         setQuality(d.quality ?? null);
         setReview(d.review ?? "");
         setPlan(d.plan ?? "");
+        setLoading(false);
+      })
+      .catch((e) => {
+        if (cancelled) return;
+        setError(`Не удалось загрузить: ${e.message}`);
         setLoading(false);
       });
     return () => {
@@ -51,21 +61,43 @@ export default function ReviewForm({
 
   async function save() {
     setSaving(true);
-    await fetch(endpoint, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        quality,
-        review: review.trim() === "" ? null : review,
-        plan: plan.trim() === "" ? null : plan,
-      }),
-    });
-    setSaving(false);
-    setSavedAt(new Date().toLocaleTimeString("ru-RU"));
-    onSaved?.();
+    setError(null);
+    try {
+      const res = await fetch(endpoint, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          quality,
+          review: review.trim() === "" ? null : review,
+          plan: plan.trim() === "" ? null : plan,
+        }),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      setSavedAt(new Date().toLocaleTimeString("ru-RU"));
+      onSaved?.();
+    } catch (e) {
+      setError(`Не удалось сохранить: ${(e as Error).message}`);
+    } finally {
+      setSaving(false);
+    }
   }
 
   if (loading) return <div className="text-sm text-slate-500">Загрузка…</div>;
+
+  if (error && review === "" && plan === "" && quality === null) {
+    return (
+      <div className="text-sm text-rose-400">
+        {error}
+        <button
+          type="button"
+          onClick={() => window.location.reload()}
+          className="ml-2 underline hover:text-rose-300"
+        >
+          Обновить
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-5">
@@ -110,7 +142,10 @@ export default function ReviewForm({
         >
           {saving ? "Сохранение…" : "Сохранить"}
         </button>
-        {savedAt && <span className="text-xs text-emerald-400">Сохранено в {savedAt}</span>}
+        {savedAt && !error && (
+          <span className="text-xs text-emerald-400">Сохранено в {savedAt}</span>
+        )}
+        {error && <span className="text-xs text-rose-400">{error}</span>}
       </div>
     </div>
   );
