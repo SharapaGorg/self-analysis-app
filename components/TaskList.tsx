@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { Task } from "@/lib/types";
 
 export default function TaskList({
@@ -16,6 +16,15 @@ export default function TaskList({
   const [newTitle, setNewTitle] = useState("");
   const [newPlanned, setNewPlanned] = useState(1);
 
+  // Mirror of `tasks` for reading the latest snapshot inside async handlers
+  // without closing over a stale render value (revert-on-error uses this).
+  const tasksRef = useRef<Task[]>([]);
+  useEffect(() => {
+    tasksRef.current = tasks;
+    onHasTasksChange?.(tasks.length > 0);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tasks]);
+
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
@@ -27,7 +36,6 @@ export default function TaskList({
       .then((list: Task[]) => {
         if (cancelled) return;
         setTasks(list);
-        onHasTasksChange?.(list.length > 0);
         setLoading(false);
       })
       .catch((e) => {
@@ -41,11 +49,6 @@ export default function TaskList({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [date]);
 
-  function apply(list: Task[]) {
-    setTasks(list);
-    onHasTasksChange?.(list.length > 0);
-  }
-
   async function addTask() {
     const title = newTitle.trim();
     if (title === "") return;
@@ -58,7 +61,8 @@ export default function TaskList({
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const created = (await res.json()) as Task;
-      apply([...tasks, created]);
+      // Functional update: append to whatever is current, never a stale snapshot.
+      setTasks((prev) => [...prev, created]);
       setNewTitle("");
       setNewPlanned(1);
     } catch (e) {
@@ -68,9 +72,11 @@ export default function TaskList({
 
   async function patchTask(id: number, patch: Partial<Task>) {
     setError(null);
-    // Optimistic update.
-    const prev = tasks;
-    apply(tasks.map((t) => (t.id === id ? { ...t, ...patch } : t)));
+    const snapshot = tasksRef.current; // for revert on failure
+    // Optimistic, functional update.
+    setTasks((prev) =>
+      prev.map((t) => (t.id === id ? { ...t, ...patch } : t)),
+    );
     try {
       const res = await fetch(`/api/tasks/${id}`, {
         method: "PUT",
@@ -78,23 +84,23 @@ export default function TaskList({
         body: JSON.stringify(patch),
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const updated = (await res.json()) as Task;
-      apply(tasks.map((t) => (t.id === id ? updated : t)));
+      // No success reconcile: the server echoes the same values we already
+      // applied, and overwriting here would clobber edits typed meanwhile.
     } catch (e) {
-      apply(prev);
+      setTasks(snapshot);
       setError(`Не удалось сохранить: ${(e as Error).message}`);
     }
   }
 
   async function removeTask(id: number) {
     setError(null);
-    const prev = tasks;
-    apply(tasks.filter((t) => t.id !== id));
+    const snapshot = tasksRef.current;
+    setTasks((prev) => prev.filter((t) => t.id !== id));
     try {
       const res = await fetch(`/api/tasks/${id}`, { method: "DELETE" });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
     } catch (e) {
-      apply(prev);
+      setTasks(snapshot);
       setError(`Не удалось удалить: ${(e as Error).message}`);
     }
   }
