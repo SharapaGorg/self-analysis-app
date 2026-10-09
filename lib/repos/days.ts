@@ -18,6 +18,32 @@ export function getAllDays(): DayRecord[] {
   return getDb().prepare("SELECT * FROM days ORDER BY date").all() as DayRecord[];
 }
 
+/**
+ * Recompute a day's total pomodoros as the sum of its tasks' actuals.
+ * No-op for days that have no tasks — those keep their manually entered total
+ * (legacy behaviour).
+ */
+export function recomputePomodoros(date: string): void {
+  const db = getDb();
+  const row = db
+    .prepare(
+      "SELECT COUNT(*) AS n, COALESCE(SUM(actual), 0) AS s FROM tasks WHERE date = ?",
+    )
+    .get(date) as { n: number; s: number };
+  if (row.n === 0) return;
+  const existing = getDay(date);
+  const updated_at = new Date().toISOString();
+  if (existing) {
+    db.prepare(
+      "UPDATE days SET pomodoros = ?, updated_at = ? WHERE date = ?",
+    ).run(row.s, updated_at, date);
+  } else {
+    db.prepare(
+      "INSERT INTO days (date, pomodoros, updated_at) VALUES (?, ?, ?)",
+    ).run(date, row.s, updated_at);
+  }
+}
+
 export interface DayUpsert {
   pomodoros?: number;
   quality?: number | null;
