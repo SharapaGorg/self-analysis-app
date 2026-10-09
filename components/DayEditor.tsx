@@ -134,9 +134,10 @@ export default function DayEditor({
             <input
               type="number"
               min={0}
+              step={0.5}
               value={pomodoros}
               onChange={(e) =>
-                setPomodoros(Math.max(0, Math.floor(Number(e.target.value) || 0)))
+                setPomodoros(Math.max(0, Number(e.target.value) || 0))
               }
               className="w-20 rounded-lg border border-slate-700 bg-slate-900 px-3 py-1.5 text-center text-lg font-semibold"
             />

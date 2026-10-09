@@ -25,9 +25,9 @@ export function parseQuality(v: unknown): number | null | undefined {
   return v;
 }
 
-/** Validate pomodoros: integer >= 0. Returns undefined if invalid. */
+/** Validate pomodoros: finite number >= 0 (fractional allowed). Returns undefined if invalid. */
 export function parsePomodoros(v: unknown): number | undefined {
-  if (typeof v !== "number" || !Number.isInteger(v) || v < 0) return undefined;
+  if (typeof v !== "number" || !Number.isFinite(v) || v < 0) return undefined;
   return v;
 }
 

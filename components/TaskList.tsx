@@ -233,11 +233,10 @@ function NumBox({
       <input
         type="number"
         min={0}
+        step={0.5}
         value={value}
-        onChange={(e) =>
-          onChange(Math.max(0, Math.floor(Number(e.target.value) || 0)))
-        }
-        className="w-12 rounded border border-slate-700 bg-slate-900 px-1.5 py-1 text-center text-sm font-semibold text-slate-100"
+        onChange={(e) => onChange(Math.max(0, Number(e.target.value) || 0))}
+        className="w-14 rounded border border-slate-700 bg-slate-900 px-1.5 py-1 text-center text-sm font-semibold text-slate-100"
       />
     </label>
   );
