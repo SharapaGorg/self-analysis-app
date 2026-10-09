@@ -34,11 +34,17 @@ const SCHEMA = {
 } as const;
 
 function defaultCaller(): LlmCaller {
+  // Resolve credentials the way the SDK does — ANTHROPIC_API_KEY, else an
+  // ANTHROPIC_AUTH_TOKEN, else an OAuth profile from `ant auth login` (the same
+  // login behind a Claude subscription). No separate paid API key required.
+  // When the resolved credential is an OAuth token, the oauth beta header is
+  // required; it's harmless with an API key, so we always send it.
+  const authToken = process.env.ANTHROPIC_AUTH_TOKEN;
   const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) {
-    throw new Error("ANTHROPIC_API_KEY не задан");
-  }
-  const client = new Anthropic({ apiKey });
+  const client = new Anthropic({
+    ...(apiKey ? { apiKey } : authToken ? { authToken } : {}),
+    defaultHeaders: { "anthropic-beta": "oauth-2025-04-20" },
+  });
   return async (prompt: string) => {
     const res = await client.messages.create({
       model: MODEL,

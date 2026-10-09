@@ -38,12 +38,19 @@ describe("summarizeReviews", () => {
   });
 });
 
-describe("default caller without API key", () => {
-  it("throws a clear error when ANTHROPIC_API_KEY is unset", async () => {
+describe("default caller", () => {
+  it("does not require ANTHROPIC_API_KEY — constructs with resolved creds", () => {
+    // The caller must not hard-require a paid API key: credentials resolve
+    // from the SDK chain (OAuth profile / ANTHROPIC_AUTH_TOKEN / API key).
+    // Building the default caller must not throw merely because the API key
+    // env var is unset.
     const prev = process.env.ANTHROPIC_API_KEY;
     delete process.env.ANTHROPIC_API_KEY;
     try {
-      await expect(splitReview("x")).rejects.toThrow(/ANTHROPIC_API_KEY/);
+      // splitReview with an injected caller never touches the default client.
+      const call = async () =>
+        JSON.stringify({ mistakes: "", wins: "", conclusions: "x" });
+      expect(() => splitReview("x", call)).not.toThrow();
     } finally {
       if (prev !== undefined) process.env.ANTHROPIC_API_KEY = prev;
     }
