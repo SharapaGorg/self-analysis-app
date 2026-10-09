@@ -28,3 +28,4 @@ data.db-shm
 .DS_Store
 *.log
 .env*.local
+.superpowers/

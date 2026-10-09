@@ -1,24 +1,47 @@
+export interface Task {
+  id: number;
+  date: string; // YYYY-MM-DD, the day this task belongs to
+  title: string;
+  planned: number; // planned pomodoros, >= 0
+  actual: number; // actual pomodoros, >= 0
+  done: 0 | 1;
+  sort_order: number;
+  updated_at: string;
+}
+
 export interface DayRecord {
   date: string; // YYYY-MM-DD
   pomodoros: number;
   quality: number | null; // 1..10
-  review: string | null;
+  review: string | null; // legacy, retained for migrated data; no longer shown
+  mistakes: string | null;
+  wins: string | null;
+  conclusions: string | null;
+  mental: number | null; // 1..10
+  mental_note: string | null;
+  social: 0 | 1; // 0 = alone, 1 = with someone
   updated_at: string;
 }
 
 export interface WeeklyReview {
   week_start: string; // Monday, YYYY-MM-DD
   quality: number | null;
-  review: string | null;
+  review: string | null; // legacy
   plan: string | null;
+  mistakes: string | null;
+  wins: string | null;
+  conclusions: string | null;
   updated_at: string;
 }
 
 export interface MonthlyReview {
   month: string; // YYYY-MM
   quality: number | null;
-  review: string | null;
+  review: string | null; // legacy
   plan: string | null;
+  mistakes: string | null;
+  wins: string | null;
+  conclusions: string | null;
   updated_at: string;
 }
 
