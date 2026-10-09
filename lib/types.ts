@@ -20,6 +20,7 @@ export interface DayRecord {
   mental: number | null; // 1..10
   mental_note: string | null;
   social: 0 | 1; // 0 = alone, 1 = with someone
+  plan: string | null; // free-text plan for the day (used by "plan tomorrow")
   updated_at: string;
 }
 

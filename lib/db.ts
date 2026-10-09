@@ -82,6 +82,7 @@ function migrate(db: Database.Database): void {
   addColumn("days", "mental", "INTEGER");
   addColumn("days", "mental_note", "TEXT");
   addColumn("days", "social", "INTEGER NOT NULL DEFAULT 0");
+  addColumn("days", "plan", "TEXT");
   for (const t of ["weekly_reviews", "monthly_reviews"]) {
     addColumn(t, "mistakes", "TEXT");
     addColumn(t, "wins", "TEXT");

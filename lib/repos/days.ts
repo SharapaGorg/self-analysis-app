@@ -54,6 +54,7 @@ export interface DayUpsert {
   mental?: number | null;
   mental_note?: string | null;
   social?: 0 | 1;
+  plan?: string | null;
 }
 
 export function upsertDay(date: string, patch: DayUpsert): DayRecord {
@@ -72,13 +73,14 @@ export function upsertDay(date: string, patch: DayUpsert): DayRecord {
     mental: pick(patch.mental, existing?.mental, null),
     mental_note: pick(patch.mental_note, existing?.mental_note, null),
     social: pick(patch.social, existing?.social, 0 as 0 | 1),
+    plan: pick(patch.plan, existing?.plan, null),
     updated_at: new Date().toISOString(),
   };
 
   getDb()
     .prepare(
-      `INSERT INTO days (date, pomodoros, quality, review, mistakes, wins, conclusions, mental, mental_note, social, updated_at)
-       VALUES (@date, @pomodoros, @quality, @review, @mistakes, @wins, @conclusions, @mental, @mental_note, @social, @updated_at)
+      `INSERT INTO days (date, pomodoros, quality, review, mistakes, wins, conclusions, mental, mental_note, social, plan, updated_at)
+       VALUES (@date, @pomodoros, @quality, @review, @mistakes, @wins, @conclusions, @mental, @mental_note, @social, @plan, @updated_at)
        ON CONFLICT(date) DO UPDATE SET
          pomodoros = @pomodoros,
          quality = @quality,
@@ -89,6 +91,7 @@ export function upsertDay(date: string, patch: DayUpsert): DayRecord {
          mental = @mental,
          mental_note = @mental_note,
          social = @social,
+         plan = @plan,
          updated_at = @updated_at`,
     )
     .run(row);

@@ -38,6 +38,7 @@ describe("migrate", () => {
       "mental",
       "mental_note",
       "social",
+      "plan",
     ]) {
       expect(c).toContain(col);
     }

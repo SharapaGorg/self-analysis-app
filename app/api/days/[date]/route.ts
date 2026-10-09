@@ -33,6 +33,7 @@ export async function GET(
       mental: null,
       mental_note: null,
       social: 0,
+      plan: null,
       updated_at: null,
     },
   );
@@ -105,6 +106,7 @@ export async function PUT(
     "wins",
     "conclusions",
     "mental_note",
+    "plan",
   ] as const) {
     if (key in body) {
       const v = parseText(body[key]);

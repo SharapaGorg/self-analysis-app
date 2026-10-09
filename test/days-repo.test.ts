@@ -30,6 +30,12 @@ describe("upsertDay new fields", () => {
     expect(rec.social).toBe(0);
     expect(rec.mistakes).toBeNull();
     expect(rec.mental).toBeNull();
+    expect(rec.plan).toBeNull();
+  });
+
+  it("persists a free-text day plan", () => {
+    const rec = days.upsertDay("2026-10-04", { plan: "сделать A, B, C" });
+    expect(rec.plan).toBe("сделать A, B, C");
   });
 
   it("partial update does not clobber existing fields", () => {
