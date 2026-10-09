@@ -51,6 +51,43 @@ function migrate(db: Database.Database): void {
 
     INSERT OR IGNORE INTO settings (id, daily_goal) VALUES (1, 8);
   `);
+
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS tasks (
+      id         INTEGER PRIMARY KEY AUTOINCREMENT,
+      date       TEXT NOT NULL,
+      title      TEXT NOT NULL,
+      planned    INTEGER NOT NULL DEFAULT 0,
+      actual     INTEGER NOT NULL DEFAULT 0,
+      done       INTEGER NOT NULL DEFAULT 0,
+      sort_order INTEGER NOT NULL DEFAULT 0,
+      updated_at TEXT NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS idx_tasks_date ON tasks(date);
+  `);
+
+  // Additive column migrations — idempotent via table_info check. SQLite has
+  // no "ADD COLUMN IF NOT EXISTS", so we probe first.
+  const addColumn = (table: string, col: string, decl: string) => {
+    const existing = (
+      db.prepare(`PRAGMA table_info(${table})`).all() as { name: string }[]
+    ).map((r) => r.name);
+    if (!existing.includes(col)) {
+      db.exec(`ALTER TABLE ${table} ADD COLUMN ${col} ${decl}`);
+    }
+  };
+  addColumn("days", "mistakes", "TEXT");
+  addColumn("days", "wins", "TEXT");
+  addColumn("days", "conclusions", "TEXT");
+  addColumn("days", "mental", "INTEGER");
+  addColumn("days", "mental_note", "TEXT");
+  addColumn("days", "social", "INTEGER NOT NULL DEFAULT 0");
+  addColumn("days", "plan", "TEXT");
+  for (const t of ["weekly_reviews", "monthly_reviews"]) {
+    addColumn(t, "mistakes", "TEXT");
+    addColumn(t, "wins", "TEXT");
+    addColumn(t, "conclusions", "TEXT");
+  }
 }
 
 export function getDb(): Database.Database {

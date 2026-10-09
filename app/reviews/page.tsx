@@ -117,9 +117,8 @@ export default function ReviewsPage() {
             <ReviewForm
               key={weekStart}
               endpoint={`/api/weekly/${weekStart}`}
-              reviewLabel="Как прошла неделя"
+              summaryEndpoint={`/api/weekly/${weekStart}/summary`}
               planLabel="Планы на следующую неделю"
-              reviewPlaceholder="Что удалось, где просел, какие выводы?"
               planPlaceholder="Главные задачи и фокус на следующую неделю"
               onSaved={loadWeeks}
             />
@@ -145,9 +144,8 @@ export default function ReviewsPage() {
             <ReviewForm
               key={month}
               endpoint={`/api/monthly/${month}`}
-              reviewLabel="Итоги месяца"
+              summaryEndpoint={`/api/monthly/${month}/summary`}
               planLabel="Планы на следующий месяц"
-              reviewPlaceholder="Главные результаты, паттерны, что менять?"
               planPlaceholder="Цели и фокус на следующий месяц"
               onSaved={loadMonths}
             />

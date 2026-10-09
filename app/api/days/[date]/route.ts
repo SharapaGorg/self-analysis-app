@@ -1,6 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDay, upsertDay, type DayUpsert } from "@/lib/repos/days";
-import { isValidDate, parsePomodoros, parseQuality, parseText } from "@/lib/validate";
+import { listTasks } from "@/lib/repos/tasks";
+import {
+  isValidDate,
+  parsePomodoros,
+  parseQuality,
+  parseText,
+  parseBool,
+} from "@/lib/validate";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -15,7 +22,20 @@ export async function GET(
   }
   const rec = getDay(date);
   return NextResponse.json(
-    rec ?? { date, pomodoros: 0, quality: null, review: null, updated_at: null },
+    rec ?? {
+      date,
+      pomodoros: 0,
+      quality: null,
+      review: null,
+      mistakes: null,
+      wins: null,
+      conclusions: null,
+      mental: null,
+      mental_note: null,
+      social: 0,
+      plan: null,
+      updated_at: null,
+    },
   );
 }
 
@@ -35,7 +55,10 @@ export async function PUT(
 
   const patch: DayUpsert = {};
 
-  if ("pomodoros" in body) {
+  // Days that have tasks derive their total from task actuals; a pomodoros
+  // value in the body is ignored for them.
+  const hasTasks = listTasks(date).length > 0;
+  if ("pomodoros" in body && !hasTasks) {
     const p = parsePomodoros(body.pomodoros);
     if (p === undefined) {
       return NextResponse.json(
@@ -55,15 +78,46 @@ export async function PUT(
     }
     patch.quality = q;
   }
-  if ("review" in body) {
-    const r = parseText(body.review);
-    if (r === undefined) {
+  if ("mental" in body) {
+    const m = parseQuality(body.mental);
+    if (m === undefined) {
       return NextResponse.json(
-        { error: "review must be a string or null" },
+        { error: "mental must be null or an integer 1..10" },
         { status: 400 },
       );
     }
-    patch.review = r;
+    patch.mental = m;
+  }
+  if ("social" in body) {
+    const s = parseBool(body.social);
+    if (s === undefined) {
+      return NextResponse.json(
+        { error: "social must be 0 or 1" },
+        { status: 400 },
+      );
+    }
+    patch.social = s;
+  }
+
+  // Free-text fields share the same null-or-string validation.
+  for (const key of [
+    "review",
+    "mistakes",
+    "wins",
+    "conclusions",
+    "mental_note",
+    "plan",
+  ] as const) {
+    if (key in body) {
+      const v = parseText(body[key]);
+      if (v === undefined) {
+        return NextResponse.json(
+          { error: `${key} must be a string or null` },
+          { status: 400 },
+        );
+      }
+      patch[key] = v;
+    }
   }
 
   return NextResponse.json(upsertDay(date, patch));
