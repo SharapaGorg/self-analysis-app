@@ -5,30 +5,33 @@ import QualityPicker from "./QualityPicker";
 
 interface ReviewData {
   quality: number | null;
-  review: string | null;
   plan: string | null;
+  mistakes: string | null;
+  wins: string | null;
+  conclusions: string | null;
 }
 
 export default function ReviewForm({
   endpoint,
-  reviewLabel,
+  summaryEndpoint,
   planLabel,
-  reviewPlaceholder,
   planPlaceholder,
   onSaved,
 }: {
   endpoint: string; // e.g. /api/weekly/2026-09-21
-  reviewLabel: string;
+  summaryEndpoint: string; // e.g. /api/weekly/2026-09-21/summary
   planLabel: string;
-  reviewPlaceholder?: string;
   planPlaceholder?: string;
   onSaved?: () => void;
 }) {
   const [quality, setQuality] = useState<number | null>(null);
-  const [review, setReview] = useState("");
   const [plan, setPlan] = useState("");
+  const [mistakes, setMistakes] = useState<string | null>(null);
+  const [wins, setWins] = useState<string | null>(null);
+  const [conclusions, setConclusions] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [generating, setGenerating] = useState(false);
   const [savedAt, setSavedAt] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -45,8 +48,10 @@ export default function ReviewForm({
       .then((d: ReviewData) => {
         if (cancelled) return;
         setQuality(d.quality ?? null);
-        setReview(d.review ?? "");
         setPlan(d.plan ?? "");
+        setMistakes(d.mistakes ?? null);
+        setWins(d.wins ?? null);
+        setConclusions(d.conclusions ?? null);
         setLoading(false);
       })
       .catch((e) => {
@@ -68,7 +73,6 @@ export default function ReviewForm({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           quality,
-          review: review.trim() === "" ? null : review,
           plan: plan.trim() === "" ? null : plan,
         }),
       });
@@ -82,49 +86,57 @@ export default function ReviewForm({
     }
   }
 
+  async function generate() {
+    setGenerating(true);
+    setError(null);
+    try {
+      const res = await fetch(summaryEndpoint, { method: "POST" });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error || `HTTP ${res.status}`);
+      setMistakes(data.mistakes ?? null);
+      setWins(data.wins ?? null);
+      setConclusions(data.conclusions ?? null);
+      onSaved?.();
+    } catch (e) {
+      setError(`Не удалось сгенерировать сводку: ${(e as Error).message}`);
+    } finally {
+      setGenerating(false);
+    }
+  }
+
   if (loading) return <div className="text-sm text-slate-500">Загрузка…</div>;
 
-  if (error && review === "" && plan === "" && quality === null) {
-    return (
-      <div className="text-sm text-rose-400">
-        {error}
-        <button
-          type="button"
-          onClick={() => window.location.reload()}
-          className="ml-2 underline hover:text-rose-300"
-        >
-          Обновить
-        </button>
-      </div>
-    );
-  }
+  const label =
+    "mb-1.5 block text-xs font-medium uppercase tracking-wide text-slate-400";
 
   return (
     <div className="space-y-5">
       <div>
-        <label className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-slate-400">
-          Оценка качества
-        </label>
+        <label className={label}>Оценка качества</label>
         <QualityPicker value={quality} onChange={setQuality} />
       </div>
 
-      <div>
-        <label className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-slate-400">
-          {reviewLabel}
-        </label>
-        <textarea
-          value={review}
-          onChange={(e) => setReview(e.target.value)}
-          rows={6}
-          placeholder={reviewPlaceholder}
-          className="w-full resize-y rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm placeholder:text-slate-600"
-        />
+      <div className="space-y-3 rounded-lg border border-slate-800 bg-slate-900/40 p-3">
+        <div className="flex items-center justify-between">
+          <span className="text-xs font-medium uppercase tracking-wide text-slate-400">
+            Авто-сводка по дням
+          </span>
+          <button
+            type="button"
+            onClick={generate}
+            disabled={generating}
+            className="rounded-md bg-slate-800 px-3 py-1.5 text-xs font-medium text-slate-200 hover:bg-slate-700 disabled:opacity-50"
+          >
+            {generating ? "Генерация…" : "Сгенерировать сводку"}
+          </button>
+        </div>
+        <SummaryField title="Ошибки" value={mistakes} />
+        <SummaryField title="Победы" value={wins} />
+        <SummaryField title="Выводы" value={conclusions} />
       </div>
 
       <div>
-        <label className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-slate-400">
-          {planLabel}
-        </label>
+        <label className={label}>{planLabel}</label>
         <textarea
           value={plan}
           onChange={(e) => setPlan(e.target.value)}
@@ -147,6 +159,19 @@ export default function ReviewForm({
         )}
         {error && <span className="text-xs text-rose-400">{error}</span>}
       </div>
+    </div>
+  );
+}
+
+function SummaryField({ title, value }: { title: string; value: string | null }) {
+  return (
+    <div>
+      <div className="text-xs font-semibold text-slate-300">{title}</div>
+      {value ? (
+        <p className="whitespace-pre-wrap text-sm text-slate-400">{value}</p>
+      ) : (
+        <p className="text-sm text-slate-600">— (нажми «Сгенерировать сводку»)</p>
+      )}
     </div>
   );
 }
